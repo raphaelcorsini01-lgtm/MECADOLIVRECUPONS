@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ofertas do Dia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f7f9fc; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .mobile-card { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); border: 1px solid rgba(226, 232, 240, 0.8); }
+    </style>
+</head>
+<body class="text-slate-800 pb-24">
+    <header class="bg-gradient-to-r from-red-500 to-rose-600 text-white sticky top-0 z-50 shadow-md">
+        <div class="px-4 py-3.5 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                        <i class="fa-solid fa-fire text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold tracking-tight">Achadinhos do Dia</h1>
+                        <p class="text-[10px] text-rose-100">Promoções atualizadas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="relative w-full">
+                <input type="text" id="search-input" placeholder="O que você procura hoje?" class="w-full bg-white/10 text-white placeholder-rose-200 border border-white/20 rounded-2xl py-2.5 px-4 pl-10 focus:outline-none focus:bg-white focus:text-slate-900 focus:placeholder-slate-400 transition-all text-sm">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-200 pointer-events-none" id="search-icon"></i>
+            </div>
+        </div>
+    </header>
+    <div class="bg-white border-b border-slate-100 sticky top-[116px] z-40 py-2.5 shadow-sm">
+        <div class="px-4 overflow-x-auto flex gap-2 no-scrollbar scroll-smooth" id="categories-container">
+            <button class="category-btn active shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-rose-600 text-white shadow-sm transition-all" onclick="filterCategory('Todos')">🔥 Todos</button>
+        </div>
+    </div>
+    <main class="px-3 py-4 max-w-md mx-auto">
+        <div class="grid grid-cols-2 gap-3" id="products-grid"></div>
+        <div id="empty-state" class="hidden text-center py-16 flex flex-col items-center justify-center gap-3">
+            <i class="fa-regular fa-face-frown text-5xl text-slate-300"></i>
+            <h3 class="text-base font-bold text-slate-600">Nenhum achado encontrado</h3>
+        </div>
+    </main>
+    <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-2.5 px-6 flex items-center justify-around z-50 shadow-lg">
+        <button class="flex flex-col items-center gap-1 text-rose-600" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            <i class="fa-solid fa-house text-lg"></i><span class="text-[10px] font-bold">Início</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 text-slate-400" onclick="document.getElementById('search-input').focus()">
+            <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[10px] font-bold">Buscar</span>
+        </button>
+    </div>
+    <script src="./products_data.js"></script>
+    <script>
+        let categoriaAtiva = 'Todos';
+        let termoBusca = '';
+        const catContainer = document.getElementById('categories-container');
+        SETORES_DATA.forEach(setor => {
+            const btn = document.createElement('button');
+            btn.className = "category-btn shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-100 transition-all";
+            btn.innerText = setor;
+            btn.onclick = () => filterCategory(setor, btn);
+            catContainer.appendChild(btn);
+        });
+        function filterCategory(setor, element = null) {
+            categoriaAtiva = setor;
+            document.querySelectorAll('.category-btn').forEach(b => {
+                b.classList.remove('bg-rose-600', 'text-white', 'shadow-sm');
+                b.classList.add('bg-slate-50', 'text-slate-600', 'border', 'border-slate-100');
+            });
+            if (element) {
+                element.classList.remove('bg-slate-50', 'text-slate-600', 'border', 'border-slate-100');
+                element.classList.add('bg-rose-600', 'text-white', 'shadow-sm');
+            } else {
+                document.querySelector('.category-btn').classList.add('bg-rose-600', 'text-white', 'shadow-sm');
+            }
+            renderProdutos();
+        }
+        function renderProdutos() {
+            const grid = document.getElementById('products-grid');
+            const empty = document.getElementById('empty-state');
+            grid.innerHTML = '';
+            const filtrados = PRODUTOS_DATA.filter(p => {
+                const matchesCategory = (categoriaAtiva === 'Todos' || p.setor === categoriaAtiva);
+                const matchesSearch = p.nome.toLowerCase().includes(termoBusca.toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+            if (filtrados.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                empty.classList.add('hidden');
+                filtrados.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-2xl overflow-hidden flex flex-col mobile-card";
+                    const temPreco = p.preco_original !== 'Ver na Loja';
+                    card.innerHTML = `
+                        <div class="relative aspect-square w-full bg-slate-50 flex items-center justify-center p-2.5">
+                            <img src="${p.foto}" class="object-contain max-h-full max-w-full" loading="lazy">
+                            <span class="absolute top-2 left-2 bg-rose-50 text-rose-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase">${p.setor.split(' ')[0]}</span>
+                            ${temPreco ? `<span class="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm">-${p.desconto_pct}</span>` : ''}
+                        </div>
+                        <div class="p-3 flex flex-col flex-grow justify-between gap-2">
+                            <div class="space-y-1">
+                                <h3 class="text-xs font-bold text-slate-800 line-clamp-2 leading-tight min-h-[2rem]">${p.nome}</h3>
+                                <div class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase">
+                                    <i class="fa-solid fa-ticket text-[8px]"></i> ${p.cupom}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                ${temPreco ? `
+                                    <div class="flex flex-col">
+                                        <span class="text-[9px] text-slate-400 line-through">De: ${p.preco_original}</span>
+                                        <span class="text-sm font-extrabold text-emerald-600">${p.preco_final}</span>
+                                    </div>
+                                ` : `<span class="text-xs font-bold text-slate-500">Acessar Preço</span>`}
+                                <a href="${p.link}" target="_blank" class="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-rose-500 to-red-600 text-white font-extrabold text-xs py-2 px-3 rounded-xl shadow-sm active:scale-95 transition-all">COMPRAR <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i></a>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            termoBusca = e.target.value;
+            renderProdutos();
+        });
+        renderProdutos();
+    </script>
+</body>
+</html>
